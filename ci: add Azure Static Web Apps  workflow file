@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Sharing App</title>
+</head>
+<body>
+  <h1>File Sharing App</h1>
+  
+  <!-- Drop zone for file upload -->
+  <div id="dropzone">
+    <input type="file" id="fileInput" multiple>
+    <label for="fileInput">Drop files here or click to upload</label>
+  </div>
+
+  <button id="shareButton">Share File</button>
+
+  <h2>Peers:</h2>
+  <ul id="peerList"></ul>
+
+  <script>
+    // Code for handling file sharing
+    document.addEventListener('DOMContentLoaded', function () {
+      var peer = new Peer(); // Create a new Peer instance
+      var peers = [];
+
+      peer.on('open', function (id) {
+        console.log('My peer ID is: ' + id);
+      });
+
+      peer.on('connection', function (connection) {
+        console.log('New connection:', connection.peer);
+        peers.push(connection);
+        updatePeerList();
+      });
+
+      peer.on('error', function (error) {
+        console.error('Peer error:', error);
+      });
+
+      // Update peer list in the UI
+      function updatePeerList() {
+        var peerList = document.getElementById('peerList');
+        peerList.innerHTML = '';
+        peers.forEach(function (peer) {
+          var li = document.createElement('li');
+          li.textContent = peer.peer;
+          peerList.appendChild(li);
+        });
+      }
+
+      // Handle file sharing
+      var fileInput = document.getElementById('fileInput');
+      var shareButton = document.getElementById('shareButton');
+
+      shareButton.addEventListener('click', function () {
+        var files = fileInput.files;
+        if (files.length === 0) return;
+
+        Array.from(files).forEach(function (file) {
+          peers.forEach(function (peerConnection) {
+            var fileReader = new FileReader();
+            fileReader.onload = function () {
+              var data = fileReader.result;
+              peerConnection.send({ file: data, fileName: file.name });
+            };
+            fileReader.readAsDataURL(file);
+          });
+        });
+
+        fileInput.value = ''; // Clear file input after sharing
+      });
+
+      // Drag and drop functionality for file input
+      var dropzone = document.getElementById('dropzone');
+
+      dropzone.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+
+      dropzone.addEventListener('dragleave', function () {
+        dropzone.classList.remove('dragover');
+      });
+
+      dropzone.addEventListener('drop', function (e) {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+
+        var files = e.dataTransfer.files;
+        fileInput.files = files;
+      });
+    });
+  </script>
+</body>
+</html>
